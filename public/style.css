@@ -1,0 +1,574 @@
+/* ── Reset & base ──────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  background: var(--background);
+  color: var(--foreground);
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* Screen-reader-only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+}
+
+/* ── Scan controls bar ─────────────────────────────────────────────────────── */
+#scan-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  height: 46px;
+  flex-shrink: 0;
+}
+
+#path-input {
+  flex: 0 0 400px;
+  padding: 5px 10px;
+  background: var(--secondary);
+  border: 1px solid var(--input);
+  border-radius: 4px;
+  color: var(--foreground);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+#path-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+#path-input::placeholder {
+  color: var(--muted-foreground);
+}
+
+#scan-btn {
+  flex-shrink: 0;
+  padding: 5px 18px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  letter-spacing: 0.02em;
+}
+
+#scan-btn:hover  { background: #3a8eef; }
+#scan-btn:active { background: #2a7edf; }
+
+#mode-indicator {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+#status-bar {
+  margin-left: auto;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 50%;
+  text-align: right;
+}
+
+/* ── Split panel ──────────────────────────────────────────────────────────── */
+#main-panel { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+#tree-container { flex: 0 0 50%; min-width: 20%; overflow: auto; }
+#split-divider { width: 4px; background: var(--border); cursor: col-resize; flex-shrink: 0; }
+#treemap-container { flex: 1; min-width: 20%; overflow: hidden; position: relative; }
+#treemap-container svg { width: 100%; height: 100%; display: block; }
+.treemap-tooltip { position: fixed; background: #222; color: #eee; padding: 6px 10px; border-radius: 4px; font-size: 12px; pointer-events: none; display: none; z-index: 1000; max-width: 400px; word-break: break-all; }
+.treemap-cell.selected rect { stroke: var(--primary, #4a9eff); stroke-width: 2; }
+.selected-row { background: rgba(74,158,255,0.15) !important; }
+
+/* ── Tree table ────────────────────────────────────────────────────────────── */
+#tree-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+/* Sticky header */
+#tree-table thead tr {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--card);
+}
+
+#tree-table th {
+  padding: 6px 12px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted-foreground);
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+  cursor: default;
+}
+
+#tree-table th:hover { color: var(--foreground); }
+
+/* Column widths */
+.col-name { /* takes remaining width */ }
+.col-size { width: 120px; }
+.col-pct  { width: 130px; }
+
+/* ── Body rows ─────────────────────────────────────────────────────────────── */
+#tree-table tbody tr {
+  border-bottom: 1px solid color-mix(in srgb, var(--foreground) 5%, transparent);
+  transition: background 0.08s ease;
+}
+
+#tree-table tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--foreground) 3%, transparent);
+}
+
+#tree-table tbody tr:hover {
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+#tree-table tbody tr.has-children {
+  cursor: pointer;
+}
+
+#tree-table tbody tr.has-children:hover {
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+}
+
+/* ── Cells ─────────────────────────────────────────────────────────────────── */
+#tree-table td {
+  padding: 3px 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+td.col-name {
+  padding-left: 4px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+td.col-size {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+  padding-right: 16px;
+}
+
+/* ── Name cell parts ───────────────────────────────────────────────────────── */
+.indent {
+  display: inline-block;
+  flex-shrink: 0;
+  /* width set dynamically by JS: depth * 20px */
+}
+
+.icon {
+  flex-shrink: 0;
+  margin-right: 5px;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Highlight the folder name when expanded */
+tr.expanded > td.col-name .name {
+  color: var(--primary);
+}
+
+/* ── Size bar ──────────────────────────────────────────────────────────────── */
+td.col-pct {
+  padding: 0 12px;
+  vertical-align: middle;
+}
+
+.size-bar {
+  height: 14px;
+  background: var(--secondary);
+  border: 1px solid var(--input);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 60%, transparent) 0%, var(--primary) 100%);
+  border-radius: 2px;
+  transition: width 0.2s ease;
+  min-width: 1px; /* always visible even for tiny values */
+}
+
+/* ── Scrollbar styling (Chromium/Edge) ─────────────────────────────────────── */
+#tree-container::-webkit-scrollbar        { width: 8px; height: 8px; }
+#tree-container::-webkit-scrollbar-track  { background: #0d1b34; }
+#tree-container::-webkit-scrollbar-thumb  { background: #1e3a5f; border-radius: 4px; }
+#tree-container::-webkit-scrollbar-thumb:hover { background: #2a5a8f; }
+
+/* ── Junk category badge ────────────────────────────────────────────────────── */
+/* Uses --viz-series-3 (amber) from tokens.css. */
+.viz-badge {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  background: var(--viz-series-3);
+  color: #000;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* ── Cleanup candidates toggle button ──────────────────────────────────────── */
+#candidates-btn {
+  flex-shrink: 0;
+  padding: 5px 14px;
+  background: transparent;
+  color: var(--muted-foreground);
+  border: 1px solid var(--input);
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+#candidates-btn:hover {
+  border-color: var(--primary);
+  color: var(--foreground);
+}
+
+#candidates-btn.active {
+  background: color-mix(in srgb, var(--primary) 15%, transparent);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* ── Candidates-only filter ─────────────────────────────────────────────────── */
+/* When active, hide any row that has no junk category (data-junk attribute absent). */
+#tree-body.candidates-only tr:not([data-junk]) { display: none; }
+
+/* ── Checkbox column ─────────────────────────────────────────────────────────── */
+.checkbox-col {
+  width: 24px;
+  padding: 0 4px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.checkbox-col input[type="checkbox"] {
+  width: 13px;
+  height: 13px;
+  cursor: pointer;
+  accent-color: #4a9eff;
+  vertical-align: middle;
+}
+
+/* ── Reveal in Explorer button ───────────────────────────────────────────────── */
+.reveal-btn {
+  margin-left: auto;
+  padding: 1px 5px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.1s ease, border-color 0.1s ease;
+  flex-shrink: 0;
+  color: #8aabcc;
+}
+
+#tree-table tbody tr:hover .reveal-btn {
+  opacity: 0.65;
+  border-color: #1e3a5f;
+}
+
+#tree-table tbody tr:hover .reveal-btn:hover {
+  opacity: 1;
+  border-color: #4a9eff;
+  color: #d0d8f0;
+}
+
+.reveal-btn:focus-visible {
+  opacity: 1;
+  border-color: #4a9eff;
+  outline: 2px solid #4a9eff;
+  outline-offset: 1px;
+}
+
+/* ── Floating cleanup bar ─────────────────────────────────────────────────────── */
+.floating-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: color-mix(in srgb, var(--primary) 20%, var(--card));
+  border-top: 1px solid var(--primary);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 100;
+  font-size: 13px;
+}
+
+.floating-bar[hidden] { display: none; }
+
+.floating-bar-count { font-weight: 600; color: var(--foreground); }
+.floating-bar-size  { color: var(--muted-foreground); }
+
+/* ── Button utilities ────────────────────────────────────────────────────────── */
+.btn-primary {
+  padding: 5px 14px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-primary:hover  { background: #3a8eef; }
+.btn-primary:active { background: #2a7edf; }
+.btn-primary:disabled { background: color-mix(in srgb, var(--primary) 40%, transparent); color: var(--muted-foreground); cursor: not-allowed; }
+
+.floating-bar .btn-primary { /* inherit size inside bar */ }
+
+.floating-bar button {
+  padding: 5px 14px;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  background: #4a9eff;
+  color: #fff;
+}
+
+.floating-bar button:last-child {
+  background: transparent;
+  border: 1px solid #1e3a5f;
+  color: #8aabcc;
+}
+
+.floating-bar button:hover { opacity: 0.9; }
+
+/* ── Modal overlay ───────────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.modal-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 24px 28px;
+  max-width: 560px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.modal-box h3 {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.modal-box > p {
+  margin: 0 0 10px;
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+
+/* ── Modal action row ────────────────────────────────────────────────────────── */
+.modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.modal-actions button {
+  padding: 6px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  background: transparent;
+  color: var(--muted-foreground);
+  border: 1px solid var(--input);
+}
+
+.modal-actions .btn-primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border: none;
+}
+
+.modal-actions .btn-primary:hover  { background: #3a8eef; }
+.modal-actions .btn-primary:disabled { background: color-mix(in srgb, var(--primary) 40%, transparent); color: var(--muted-foreground); cursor: not-allowed; }
+
+/* ── Danger button ───────────────────────────────────────────────────────────── */
+.btn-danger {
+  background: #b91c1c;
+  color: #fff;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-danger:hover  { background: #dc2626; }
+.btn-danger:active { background: #991b1b; }
+
+.btn-danger:disabled {
+  background: #4a1a1a;
+  color: #8a6a6a;
+  cursor: not-allowed;
+}
+
+/* ── Delete confirmation input ────────────────────────────────────────────────── */
+.delete-confirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.delete-confirm input[type="text"] {
+  padding: 5px 10px;
+  background: var(--secondary);
+  border: 1px solid var(--input);
+  border-radius: 4px;
+  color: var(--foreground);
+  font-size: 12px;
+  font-family: inherit;
+  width: 160px;
+  outline: none;
+}
+
+.delete-confirm input[type="text"]:focus {
+  border-color: #b91c1c;
+}
+
+/* ── Cleanup path list inside modal ──────────────────────────────────────────── */
+.cleanup-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.cleanup-list > li { margin-bottom: 8px; }
+
+.cleanup-list > li > strong {
+  display: block;
+  color: var(--foreground);
+  margin-bottom: 4px;
+}
+
+.cleanup-list > li > ul {
+  padding-left: 16px;
+  margin: 0;
+  list-style: disc;
+}
+
+.cleanup-list > li > ul > li {
+  margin-bottom: 2px;
+  word-break: break-all;
+}
+
+/* ── Per-path cleanup results ────────────────────────────────────────────────── */
+.cleanup-results {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.cleanup-results ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 12px;
+}
+
+.cleanup-results li {
+  padding: 2px 0;
+  word-break: break-all;
+}
+
+.cleanup-results code {
+  font-family: 'Consolas', 'Cascadia Code', monospace;
+  color: var(--primary);
+}
+
+.cleanup-results .error-msg { color: #ef4444; }
+
+/* ── Toast notification ──────────────────────────────────────────────────────── */
+.toast { position:fixed; bottom:72px; left:50%; transform:translateX(-50%);
+         background:var(--viz-series-4); color:#fff; padding:8px 18px; border-radius:6px;
+         font-size:14px; z-index:1100; pointer-events:none;
+         animation:fade-in-out 3s ease-in-out forwards; }
+@keyframes fade-in-out { 0%{opacity:0} 10%{opacity:1} 80%{opacity:1} 100%{opacity:0} }
+
+/* ── Utility classes ──────────────────────────────────────────────────────── */
+.tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* ── Lucide icon sizing in tree rows ─────────────────────────────────────── */
+.icon [data-lucide],
+.icon svg.lucide {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  vertical-align: middle;
+  stroke: currentColor;
+  flex-shrink: 0;
+}

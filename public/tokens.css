@@ -1,0 +1,58 @@
+/* DiskPeek design tokens — qvisualize agent-facing contract
+   Adapted from ~/.kiro/skills/qvisualize/assets/visualize.css
+   Dark theme by default; light theme via [data-theme="light"] on <html>. */
+
+/* ── Dark theme (default) ─────────────────────────────────────────────────── */
+:root {
+  /* Agent-facing contract */
+  --background:           #1a1a2e;
+  --foreground:           #d0d8f0;
+  --card:                 #16213e;
+  --card-foreground:      #d0d8f0;
+  --popover:              #16213e;
+  --popover-foreground:   #d0d8f0;
+  --primary:              #4a9eff;
+  --primary-foreground:   #ffffff;
+  --secondary:            #0d1b34;
+  --secondary-foreground: #d0d8f0;
+  --muted:                #0f3460;
+  --muted-foreground:     #5a7aaa;
+  --accent:               #0f3460;
+  --accent-foreground:    #4a9eff;
+  --destructive:          #ef4444;
+  --border:               #0f3460;
+  --input:                #1e3a5f;
+  --ring:                 rgba(74, 158, 255, 0.4);
+
+  /* Visualization series */
+  --viz-series-1: #4a9eff;
+  --viz-series-2: #888888;
+  --viz-series-3: #f59e0b;
+  --viz-series-4: #10b981;
+  --viz-series-5: #6366f1;
+  --viz-series-6: #ef4444;
+}
+
+/* ── Light theme override ─────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --background:           #f8f9fa;
+  --foreground:           #111827;
+  --card:                 #ffffff;
+  --card-foreground:      #111827;
+  --popover:              #ffffff;
+  --popover-foreground:   #374151;
+  --primary:              #2563eb;
+  --primary-foreground:   #ffffff;
+  --secondary:            #f3f4f6;
+  --secondary-foreground: #374151;
+  --muted:                #e5e7eb;
+  --muted-foreground:     #6b7280;
+  --accent:               #eff6ff;
+  --accent-foreground:    #2563eb;
+  --destructive:          #dc2626;
+  --border:               #d1d5db;
+  --input:                #d1d5db;
+  --ring:                 rgba(37, 99, 235, 0.4);
+
+  --viz-series-3: #d97706;
+}

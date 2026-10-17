@@ -1,0 +1,55 @@
+{
+  "_comment": "Rule 'label' field is for documentation only. Badge display text is controlled by CATEGORY_LABELS in public/app.js.",
+  "rules": [
+    {
+      "id": "node_modules",
+      "label": "node_modules",
+      "match": "dir_name",
+      "names": ["node_modules"]
+    },
+    {
+      "id": "python_cache",
+      "label": "__pycache__",
+      "match": "dir_name",
+      "names": ["__pycache__"]
+    },
+    {
+      "id": "rust_build",
+      "label": "Rust build",
+      "match": "dir_name",
+      "names": ["target"]
+    },
+    {
+      "id": "build_output",
+      "label": "Build output",
+      "match": "dir_name",
+      "names": ["build", "dist", "out", ".next"]
+    },
+    {
+      "id": "venv",
+      "label": "Python venv",
+      "match": "dir_name",
+      "names": [".venv", "venv", "env"]
+    },
+    {
+      "id": "temp",
+      "label": "Temp files",
+      "match": "path_prefix",
+      "path_templates": ["%TEMP%", "%LOCALAPPDATA%\\Temp"]
+    },
+    {
+      "id": "log",
+      "label": "Log file",
+      "match": "file_ext_age",
+      "extensions": [".log"],
+      "max_age_days": 30
+    },
+    {
+      "id": "installer",
+      "label": "Old installer",
+      "match": "file_ext_in_downloads_age",
+      "extensions": [".exe", ".msi", ".pkg"],
+      "max_age_days": 90
+    }
+  ]
+}

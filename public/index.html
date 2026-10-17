@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DiskPeek</title>
+  <link rel="stylesheet" href="/static/tokens.css">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"
+          integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i"
+          crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/lucide@0.263.0/dist/umd/lucide.min.js"
+          integrity="sha384-JNhb/AfQ8tCvhjfm2WXKx9qovmn7LcndXYllHYDf2CcTBaBMAiPsjRJeC3f9U8V6"
+          crossorigin="anonymous"></script>
+  <style>
+    /* Phase 4: Drive panel layout overrides.
+       style.css fixes #scan-controls at 46px height and uses row flex.
+       Override to a column layout that accommodates the drives list.
+       Reorganisation into tokens.css deferred (see Follow-up Work #19). */
+    body { display: flex; flex-direction: column; }
+
+    #scan-controls {
+      height: auto;
+      min-height: 46px;
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 10px 16px 8px;
+      gap: 6px;
+    }
+
+    /* tree-container must fill remaining viewport height as a flex child — now handled by
+       #main-panel layout in style.css (Phase 5). Inline override removed. */
+
+    /* ── Drive panel ─────────────────────────────────────────────────────── */
+    #drives-panel {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    #drives-list {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 4px 24px;
+    }
+
+    .drive-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .drive-item input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      cursor: pointer;
+      accent-color: var(--primary);
+      flex-shrink: 0;
+    }
+
+    .drive-label {
+      font-size: 13px;
+      color: var(--foreground);
+    }
+
+    .drive-label .drive-type {
+      color: var(--muted-foreground);
+      font-size: 12px;
+    }
+
+    #scan-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    #scan-btn:disabled {
+      background: color-mix(in srgb, var(--primary) 40%, transparent);
+      color: var(--muted-foreground);
+      cursor: not-allowed;
+    }
+
+    #mode-indicator { color: var(--muted-foreground); font-size: 12px; }
+
+    #admin-notice {
+      font-size: 12px;
+      color: var(--viz-series-3);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #admin-notice a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    #admin-notice a:hover { text-decoration: underline; }
+
+    /* 'hidden' attribute is overridden by 'display: flex' above — pin it back */
+    #admin-notice[hidden] { display: none; }
+
+    #drives-loading { color: var(--muted-foreground); font-size: 12px; }
+
+    /* ── Admin modal ─────────────────────────────────────────────────────── */
+    #admin-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+
+    #admin-modal[hidden] { display: none; }
+
+    #admin-modal-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px 28px;
+      max-width: 460px;
+      width: 90%;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    #admin-modal-box h3 {
+      margin: 0 0 14px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--foreground);
+    }
+
+    #admin-modal-box p {
+      margin: 0 0 10px;
+      font-size: 13px;
+      color: var(--muted-foreground);
+      line-height: 1.5;
+    }
+
+    #admin-modal-box ol {
+      margin: 0 0 16px;
+      padding-left: 20px;
+      font-size: 13px;
+      color: var(--muted-foreground);
+      line-height: 1.7;
+    }
+
+    #admin-modal-box code {
+      font-family: 'Consolas', 'Cascadia Code', monospace;
+      background: var(--secondary);
+      border: 1px solid var(--input);
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-size: 12px;
+      color: var(--primary);
+    }
+
+    #admin-modal-close {
+      padding: 6px 18px;
+      background: var(--primary);
+      color: var(--primary-foreground);
+      border: none;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    #admin-modal-close:hover  { background: #3a8eef; }
+    #admin-modal-close:active { background: #2a7edf; }
+
+    /* ── Theme toggle button ─────────────────────────────────────────── */
+    #theme-toggle {
+      flex-shrink: 0;
+      padding: 4px 10px;
+      background: transparent;
+      color: var(--muted-foreground);
+      border: 1px solid var(--input);
+      border-radius: 4px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: border-color 0.15s ease, color 0.15s ease;
+      margin-left: auto;
+    }
+    #theme-toggle:hover {
+      border-color: var(--primary);
+      color: var(--foreground);
+    }
+  </style>
+</head>
+<body>
+  <!-- Phase 4: Drive selection panel (replaces Phase 2 path-input scaffold) -->
+  <div id="scan-controls">
+    <div id="drives-panel">
+      <span id="drives-loading">Loading drives…</span>
+
+      <!-- Populated by app.js loadDrives() -->
+      <div id="drives-list" hidden></div>
+
+      <div id="scan-row" hidden>
+        <button id="scan-btn" type="button" disabled>Scan selected drives</button>
+        <button id="reveal-toolbar-btn" type="button" disabled title="Reveal selected item in Explorer">Reveal</button>
+        <span id="mode-indicator"></span>
+        <!-- Shown when SSE header reports mode != mft (no admin / Standard mode) -->
+        <div id="admin-notice" hidden>
+          <span>Standard mode — no admin rights.</span>
+          <a href="#" id="relaunch-admin-link">Relaunch as Admin</a>
+        </div>
+      </div>
+    </div>
+    <span id="status-bar"></span>
+    <button id="theme-toggle" type="button" aria-label="Toggle light/dark theme" title="Switch to light mode">&#9728;</button>
+  </div>
+
+  <div id="main-panel">
+    <div id="tree-container">
+      <table id="tree-table" aria-label="Directory tree">
+        <thead>
+          <tr>
+            <th class="checkbox-col"></th>
+            <th class="col-name" data-sort="name">Name</th>
+            <th class="col-size" data-sort="size">Size</th>
+            <th class="col-pct">%</th>
+          </tr>
+        </thead>
+        <tbody id="tree-body"></tbody>
+      </table>
+    </div>
+    <div id="split-divider"></div>
+    <div id="treemap-container"></div>
+  </div>
+
+  <!-- Admin instructions modal — shown when "Relaunch as Admin" link is clicked -->
+  <div id="admin-modal" role="dialog" aria-modal="true" aria-labelledby="admin-modal-title" hidden>
+    <div id="admin-modal-box">
+      <h3 id="admin-modal-title">Run DiskPeek as Administrator</h3>
+      <p>
+        Administrator rights enable <strong>fast MFT scanning</strong> — a full C: drive
+        (500 GB) in under 30 seconds instead of several minutes.
+      </p>
+      <ol>
+        <li>Close this browser tab.</li>
+        <li>Close the DiskPeek server window (Ctrl+C or close the terminal).</li>
+        <li>Double-click <code>launch-admin.bat</code> in the DiskPeek folder.</li>
+        <li>Accept the UAC elevation prompt.</li>
+      </ol>
+      <button type="button" id="admin-modal-close">Close</button>
+    </div>
+  </div>
+
+  <script src="/static/app.js" type="module"></script>
+</body>
+</html>
